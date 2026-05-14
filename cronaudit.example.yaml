@@ -1,0 +1,33 @@
+# cronaudit.example.yaml — Example configuration for cronaudit
+# Copy to /etc/cronaudit/config.yaml and adjust as needed.
+
+# Directory where raw job output is stored per run.
+log_dir: /var/log/cronaudit/runs
+
+# Directory where diff files are written when output changes.
+diff_dir: /var/log/cronaudit/diffs
+
+jobs:
+  # Audit disk usage every 5 minutes.
+  - name: disk-usage
+    command: df -h
+    schedule: "*/5 * * * *"
+    timeout: 10s
+
+  # Audit running processes every hour.
+  - name: process-list
+    command: ps aux --sort=-%cpu
+    schedule: "0 * * * *"
+    timeout: 15s
+
+  # Check installed packages daily (Debian/Ubuntu).
+  - name: installed-packages
+    command: dpkg --get-selections
+    schedule: "0 2 * * *"
+    timeout: 30s
+
+  # Audit listening network ports nightly.
+  - name: open-ports
+    command: ss -tlnp
+    schedule: "0 3 * * *"
+    timeout: 10s
