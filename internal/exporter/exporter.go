@@ -41,6 +41,9 @@ func (e *Exporter) Export(jobName string, result *store.Result, drifted bool) er
 	if result == nil {
 		return fmt.Errorf("exporter: result must not be nil")
 	}
+	if jobName == "" {
+		return fmt.Errorf("exporter: jobName must not be empty")
+	}
 	rec := Record{
 		Timestamp: result.RunAt,
 		Job:       jobName,
@@ -54,7 +57,10 @@ func (e *Exporter) Export(jobName string, result *store.Result, drifted bool) er
 		return fmt.Errorf("exporter: marshal: %w", err)
 	}
 	_, err = fmt.Fprintf(e.w, "%s\n", b)
-	return err
+	if err != nil {
+		return fmt.Errorf("exporter: write: %w", err)
+	}
+	return nil
 }
 
 // ExportToFile opens (or creates/appends) the file at path and exports the record.
