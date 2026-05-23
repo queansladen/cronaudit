@@ -86,3 +86,28 @@ func TestState_DefaultIsClosed(t *testing.T) {
 		t.Errorf("expected StateClosed for unseen job, got %s", s)
 	}
 }
+
+func TestAllow_ReopensAfterFailureInHalfOpen(t *testing.T) {
+	// After the recovery window expires the circuit enters half-open and
+	// allows a single probe. If that probe fails the circuit should return
+	// to open immediately.
+	b := circuitbreaker.New(1, 30*time.Millisecond)
+	b.RecordFailure("job")
+
+	time.Sleep(40 * time.Millisecond)
+
+	// Probe allowed in half-open state.
+	if err := b.Allow("job"); err != nil {
+		t.Fatalf("expected half-open probe to be allowed, got %v", err)
+	}
+
+	// Probe fails — circuit should reopen.
+	b.RecordFailure("job")
+
+	if err := b.Allow("job"); err == nil {
+		t.Fatal("expected circuit to reopen after half-open probe failure")
+	}
+	if b.State("job") != circuitbreaker.StateOpen {
+		t.Errorf("expected StateOpen after probe failure, got %s", b.State("job"))
+	}
+}
