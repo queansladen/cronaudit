@@ -83,3 +83,11 @@ func (l *Limiter) Remaining(job string) int {
 	}
 	return remaining
 }
+
+// ResetAll clears the rate-limit history for all tracked jobs.
+// This is useful when reconfiguring limits or during testing teardown.
+func (l *Limiter) ResetAll() {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.history = make(map[string][]time.Time)
+}
