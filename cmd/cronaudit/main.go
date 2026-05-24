@@ -48,6 +48,7 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("initialising store at %q: %w", cfg.StorePath, err)
 	}
+	defer st.Close()
 
 	// Build the command runner.
 	r := runner.New()
@@ -68,13 +69,20 @@ func run() error {
 	log.Printf("cronaudit started — monitoring %d job(s)", len(cfg.Jobs))
 
 	// Block until the process receives a termination signal.
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
-	sig := <-sigCh
+	sig := waitForSignal()
 
 	log.Printf("received signal %s — shutting down", sig)
 	cancel()
 	sched.Wait()
 
 	return nil
+}
+
+// waitForSignal blocks until SIGINT or SIGTERM is received and returns the
+// signal that triggered the shutdown.
+func waitForSignal() os.Signal {
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	defer signal.Stop(sigCh)
+	return <-sigCh
 }
